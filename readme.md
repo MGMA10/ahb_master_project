@@ -71,7 +71,6 @@ The module is written in Verilog HDL, implementing AHB Master logic as per the A
 
 ### Code Snippet:
 ```verilog
-
 always @(posedge HCLK or negedge HRESETn) begin
     if (!HRESETn)
     begin   
@@ -81,6 +80,12 @@ always @(posedge HCLK or negedge HRESETn) begin
     begin
         case (HTRANS)
             IDLE:begin
+                HADDR <= cpu_inst[63:32];
+                HWDATA <= cpu_inst[31:0];
+                HSIZE <= cpu_cont[6:4];  
+                HWRITE <= cpu_cont[0];   
+                HBURST <= cpu_cont[3:1];
+                work <= cpu_cont[7];
                 if (HREADY && work) begin
                     HTRANS <= NONSEQ;
                     burst_counter <= 0;        
@@ -96,7 +101,6 @@ always @(posedge HCLK or negedge HRESETn) begin
                     if (!work)
                     HTRANS <= BUSY;
                     else if (HBURST) begin
-                        // slave will increment the adress " HADDR <= HADDR + (4 << HSIZE); "
                         burst_counter <= burst_counter + 1;
                         HTRANS <= SEQ;
                     end else begin
@@ -106,13 +110,31 @@ always @(posedge HCLK or negedge HRESETn) begin
             end
             SEQ:begin
                 if (HREADY) begin
-                        // slave will increment the adress " HADDR <= HADDR + (4 << HSIZE); "
+                    HADDR <= HADDR + (4 << HSIZE); 
                         burst_counter <= burst_counter + 1;
                     if (!work)
                     HTRANS <= BUSY;
-                    else if (burst_counter < HBURST)
+                    else if(HBURST == 3'b001 && burst_counter < 8'b11111111)
                         HTRANS <= SEQ;
-                
+
+                    else if(HBURST == 3'b010 && burst_counter < 4)
+                            HTRANS <= SEQ;
+
+                    else if(HBURST == 3'b011 && burst_counter < 4)
+                        HTRANS <= SEQ;
+
+                    else if(HBURST == 3'b100 && burst_counter < 8)
+                            HTRANS <= SEQ;
+
+                    else if(HBURST == 3'b101 && burst_counter < 8)
+                            HTRANS <= SEQ;
+
+                    else if(HBURST == 3'b110 && burst_counter < 16)
+                            HTRANS <= SEQ;
+
+                    else if(HBURST == 3'b111 && burst_counter < 16)
+                            HTRANS <= SEQ; 
+
                         else begin
                         HTRANS <= IDLE;
                     end
@@ -210,7 +232,7 @@ Verify a read operation with a single transfer type.
 
 - **HCLK**: The main clock signal that drives the timing of the AHB Master module.
 - **HRESETn**: An active-low reset signal that initializes or resets the state of the AHB Master module.
-- **HADDR**: Carries the memory address for read/write transactions initiated by the master.
+- **HADDR**: Carries the memory address for read/write transactions initiated by the master and the firet 2 bits select the slave.
 - **HBURST**: Specifies the type of burst transaction, such as single, incremental (INCR), or wrapped (WRAP).
 - **HSIZE**: Indicates the size of the data for the current transaction (e.g., 4 bytes for 32-bit data).
 - **HTRANS**: Defines the type of transfer, including IDLE, BUSY, NON-SEQ (non-sequential), and SEQ (sequential).
@@ -225,7 +247,9 @@ Verify a read operation with a single transfer type.
 ![Alt diagram](master.png)
 
 ---
+
 ## Downloading & Runing the Simulation
+
 ### Downloading the Repository
  To download the testbench and associated files, follow these steps:
 

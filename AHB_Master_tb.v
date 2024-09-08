@@ -49,8 +49,8 @@ module AHB_Master_tb();
 
         // Perform Write Transaction (HSIZE = 4-byte, Incrementing Burst, Non-Sequential)
 
-        cpu_inst = 64'h00000000_AAAAAAAA;  // Address = 0xAAAAAAAA, Write Data = 0x00000000
-        cpu_cont = 8'b10010011;  // Work = 1, HSIZE = 4-byte, HBURST = INCR, HWRITE = 1
+        cpu_inst = 64'h000DD000_AAAAAAAA;  // Address = 0xAAAAAAAA, Write Data = 0x00000000
+        cpu_cont = 8'b10010111;  // Work = 1, HSIZE = 4-byte, HBURST = INCR, HWRITE = 1
         #20;
         
         // Check if the transaction transitions to NONSEQ
@@ -65,18 +65,18 @@ module AHB_Master_tb();
         
         // Simulate slave ready
         HREADY = 1;
-        #10;
+        #20;
 
         // Check if the transaction transitions to SEQ
         if (HTRANS == 2'b11)
             $display("SEQ transaction continued at time %0t", $time);
         else
             $display("ERROR: SEQ transaction did not continue as expected at time %0t", $time);
-
+        #30
         // Perform Read Transaction (Single Transfer, HSIZE = 4-byte, Non-Sequential)
         cpu_inst = 64'hBBBBBBBB_00000000;  // Address = 0xBBBBBBBB, No Write Data
-        cpu_cont = 8'b10000010;  // Work = 1, HSIZE = 4-byte, HBURST = SINGLE, HWRITE = 0
-        #20;
+        cpu_cont = 8'b10000110;  // Work = 1, HSIZE = 4-byte, HBURST = SINGLE, HWRITE = 0
+        #10;
 
         // Check if the transaction transitions to NONSEQ for read
         if (HTRANS == 2'b10)
@@ -87,13 +87,25 @@ module AHB_Master_tb();
         // Simulate read data from slave
         HRDATA = 32'hDEADBEEF;
         #10
-
+        HRDATA = 32'hDAAAAEEF;
+        #10
+        HRDATA = 32'hDAADDEEF;
+        #10
+        HRDATA = 32'hDAAAFFF;
+        #10
         // Check the end of the transaction
         if (HTRANS == 2'b00)
             $display("Transaction ended successfully at time %0t", $time);
         else
             $display("ERROR: Transaction did not end as expected at time %0t", $time);
 
+        // Perform BURST Transaction (Single Transfer, HSIZE = 4-byte, Sequential)
+            cpu_inst = 64'hBBBBBBBB_00000000;  // Address = 0xBBBBBBBB, No Write Data
+            cpu_cont = 8'b10001110;  // Work = 1, HSIZE = 4-byte, HBURST = SINGLE, HWRITE = 0
+            //Check the undefiend length
+            #200;
+    
+            
         // Finish simulation
         $stop;
     end
