@@ -58,6 +58,7 @@ always @(posedge HCLK or negedge HRESETn) begin
                         HTRANS <= SEQ;
                     end else begin
                         HTRANS <= IDLE;
+                        HWDATA <= cpu_inst[31:0];
                     end
                 end
             end

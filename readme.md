@@ -71,31 +71,6 @@ The module is written in Verilog HDL, implementing AHB Master logic as per the A
 
 ### Code Snippet:
 ```verilog
-module AHB_Master (
-    input wire        HCLK,        
-    input wire        HRESETn,     
-    output reg [31:0] HADDR,       
-    output reg [2:0] HBURST,         
-    output reg [2:0]  HSIZE,       
-    output reg [1:0]  HTRANS,      
-    output reg [31:0] HWDATA,      
-    output reg        HWRITE,      
-    input wire [31:0] HRDATA,      
-    input wire        HREADY,      
-    input wire        HRESP,
-    input wire [63:0] cpu_inst,
-    input wire [7:0] cpu_cont
-);
-
-
-localparam      IDLE         = 2'b00,
-                BUSY     = 2'b01,
-                NONSEQ   = 2'b10,
-                SEQ      = 2'b11;
-
-reg [7:0] burst_counter;
-reg work;
-
 always @(posedge HCLK or negedge HRESETn) begin
     if (!HRESETn)
     begin   
@@ -131,6 +106,7 @@ always @(posedge HCLK or negedge HRESETn) begin
                         HTRANS <= SEQ;
                     end else begin
                         HTRANS <= IDLE;
+                        HWDATA <= cpu_inst[31:0];
                     end
                 end
             end
