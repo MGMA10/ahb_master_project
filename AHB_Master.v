@@ -53,6 +53,7 @@ always @(posedge HCLK or negedge HRESETn) begin
                     if (!work)
                     HTRANS <= BUSY;
                     else if (HBURST) begin
+                        HWDATA <= cpu_inst[31:0];
                         burst_counter <= burst_counter + 1;
                         HTRANS <= SEQ;
                     end else begin
@@ -62,6 +63,7 @@ always @(posedge HCLK or negedge HRESETn) begin
             end
             SEQ:begin
                 if (HREADY) begin
+                    HWDATA <= cpu_inst[31:0];
                     HADDR <= HADDR + (4 << HSIZE); 
                         burst_counter <= burst_counter + 1;
                     if (!work)
