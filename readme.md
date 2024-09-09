@@ -117,26 +117,8 @@ always @(posedge HCLK or negedge HRESETn) begin
                         burst_counter <= burst_counter + 1;
                     if (!work)
                     HTRANS <= BUSY;
-                    else if(HBURST == 3'b001 && burst_counter < 8'b11111111)
+                    else if(HBURST == 3'b001 && burst_counter * HSIZE < 8'b1111111111 && burst_counter < num_beats)
                         HTRANS <= SEQ;
-
-                    else if(HBURST == 3'b010 && burst_counter < 4)
-                            HTRANS <= SEQ;
-
-                    else if(HBURST == 3'b011 && burst_counter < 4)
-                        HTRANS <= SEQ;
-
-                    else if(HBURST == 3'b100 && burst_counter < 8)
-                            HTRANS <= SEQ;
-
-                    else if(HBURST == 3'b101 && burst_counter < 8)
-                            HTRANS <= SEQ;
-
-                    else if(HBURST == 3'b110 && burst_counter < 16)
-                            HTRANS <= SEQ;
-
-                    else if(HBURST == 3'b111 && burst_counter < 16)
-                            HTRANS <= SEQ; 
 
                         else begin
                         HTRANS <= IDLE;
@@ -158,53 +140,67 @@ The `AHB_Master_tb` testbench is designed to verify the functionality of the `AH
 
 The testbench instantiates the `AHB_Master` module and drives its inputs to simulate different operational scenarios. It checks the outputs and internal state transitions to ensure that the `AHB_Master` behaves as expected under various conditions.
 
-**Procedure:**  
-- Apply a reset (`HRESETn = 0`) and then release it (`HRESETn = 1`).
-- Check the initial state of `HTRANS` and other control signals.
+### **Test Case 1: Write Transaction (HSIZE = 4-byte, Incrementing Burst, Non-Sequential)**
 
-**Expected Result:**  
-- `HTRANS` should be set to IDLE (`2'b00`).
+**Objective:**
+- To verify the behavior of a write transaction with a 4-byte transfer size, incrementing burst type, and non-sequential transfer.
 
-### 2. Write Transaction (Incrementing Burst)
+**Procedure:**
+- The test initiates a write transaction by setting `cpu_inst` to `64'h000DD000_AAAAAAAA` (Address = 0xAAAAAAAA, Write Data = 0x00000000).
+- Control signals (`cpu_cont`) are set to 8'b10010011, indicating:
+  - HSIZE = 4-byte
+  - HBURST = Incrementing Burst
+  - HWRITE = 1 (Write operation)
 
-**Objective:**  
-Test the write operation in an incrementing burst mode.
+- After some delay, the test checks if `HTRANS` transitions to `2'b10` (NONSEQ state) to indicate the start of the transaction.
+- The test simulates a busy slave by setting `HREADY = 0` and later resumes with `HREADY = 1` to check if the transaction continues with a sequential transfer (`HTRANS = 2'b11`).
 
-**Procedure:**  
-- Set `cpu_inst` to initiate a write to address `0xAAAAAAAA` with data `0x00000000`.
-- Configure `cpu_cont` for a 4-byte incrementing burst (`HBURST = INCR`), size 4-byte (`HSIZE = 3'b010`), and set `HWRITE` high.
-- Assert `HREADY` and observe state transitions.
+**Result:**
+- **At time 30:** The transaction correctly transitioned to `NONSEQ` (non-sequential) as expected.
+- **At time 80:** The transaction continued in `SEQ` (sequential) state, confirming the proper progression of the burst.
 
-**Expected Results:**  
-- `HTRANS` should transition from IDLE to NONSEQ (`2'b10`), and then to SEQ (`2'b11`) for the burst continuation.
-- The address should increment correctly for each beat of the burst.
+**Conclusion:** This test passed successfully as the transaction transitioned through the expected states.
 
-### 3. Handling Slave Busy Signal
+---
 
-**Objective:**  
-Verify that the FSM correctly handles a busy slave by waiting on `HREADY`.
+### **Test Case 2: Read Transaction (Single Transfer, HSIZE = 4-byte, Non-Sequential)**
 
-**Procedure:**  
-- During a burst write, set `HREADY = 0` to simulate a busy slave.
-- Observe the behavior of `HTRANS` and ensure it waits properly.
+**Objective:**
+- To verify the behavior of a read transaction with a 4-byte transfer size, single burst type, and non-sequential transfer.
 
-**Expected Results:**  
-- `HTRANS` should not advance to the next state while `HREADY = 0`.
-- Once `HREADY` returns to 1, the FSM should continue to SEQ state as expected.
+**Procedure:**
+- The test initiates a read transaction by setting `cpu_inst` to `64'hBBBBBBBB_00000000` (Address = 0xBBBBBBBB).
+- Control signals (`cpu_cont`) are set to 8'b10000010, indicating:
+  - HSIZE = 4-byte
+  - HBURST = Single
+  - HWRITE = 0 (Read operation)
 
-### 4. Read Transaction (Single Transfer)
+- The test checks if `HTRANS` transitions to `2'b10` (NONSEQ state) to indicate the start of the read transaction.
+- A series of data values is simulated to be returned from the slave (`HRDATA`), ranging from `32'hDEADBEEF` to `32'hAAAAAAAA`.
+- The test checks if the transaction ends properly by monitoring the transition of `HTRANS` to `2'b00`.
 
-**Objective:**  
-Verify a read operation with a single transfer type.
+**Result:**
+- **At time 120:** The transaction correctly transitioned to `NONSEQ` (non-sequential) as expected.
+- **At time 180:** The transaction ended successfully, as `HTRANS` transitioned to `2'b00`.
 
-**Procedure:**  
-- Set `cpu_inst` to address `0xBBBBBBBB` with no data (read operation).
-- Configure `cpu_cont` for a single read transfer (`HBURST = SINGLE`) and set `HWRITE` low.
-- Simulate valid read data from the slave on `HRDATA`.
+**Conclusion:** This test passed successfully, as the transaction followed the correct sequence for a read operation and ended properly.
 
-**Expected Results:**  
-- `HTRANS` should transition to NONSEQ (`2'b10`) for the read operation.
-- The correct data should be captured when `HREADY = 1`.
+---
+
+### **Test Case 3: Burst Transaction (Single Transfer, HSIZE = 4-byte, Sequential)**
+
+**Objective:**
+- To verify a single transfer burst transaction with a 4-byte transfer size and sequential behavior.
+
+**Procedure:**
+- The test initiates a burst transaction by setting `cpu_inst` to `64'hBBBBBBBB_00000000` (Address = 0xBBBBBBBB) with control signals (`cpu_cont = 8'b10000000`).
+- The `HBURST` type is set to `Single`, and `HWRITE = 0` indicates that no data is being written.
+- The `num_beats` is set to 5, although this value is ignored since the burst type is `Single`.
+
+**Result:**
+- The simulation proceeds without any errors or issues during the transaction.
+
+**Conclusion:** This test checked the handling of a single transfer burst, which successfully completed without any anomalies.
 
 **All cases were successful**
 
@@ -229,8 +225,9 @@ Verify a read operation with a single transfer type.
 | **HRDATA**   | 32      | Input     | Data read from the slave during a read transaction.            |
 | **HREADY**   | 1       | Input     | Indicates whether the slave is ready to proceed with the transaction. |
 | **HRESP**    | 1       | Input     | Indicates an error (1) or OK (0) response from the slave.      |
-| **cpu_inst** | 64      | Input     | Contains the instruction from the CPU (address and data).      |
-| **cpu_cont** | 8       | Input     | Control signals from the CPU (size, burst, work).              |
+| **cpu_inst** | 64      | Input     | Contains the instruction from the CPU (address and data). " CPU signal "     |
+| **cpu_cont** | 8       | Input     | Control signals from the CPU (size, burst, work). " CPU signal "             |
+| **num_beats** | 8       | Input     | Number of beats that the master need to send in  Incrementing burst of undefined length. " CPU signal "             |
 
 ### Detailed Descriptions:
 
@@ -247,7 +244,7 @@ Verify a read operation with a single transfer type.
 - **HRESP**: Provides feedback from the slave, where `1` indicates an error and `0` indicates success.
 - **cpu_inst**: Contains both the address (upper 32 bits) and data (lower 32 bits) from the CPU for the current operation.
 - **cpu_cont**: Control signals from the CPU that include burst size, data size, and the direction of the transfer (read or write).
-
+- **num_beats**: Number of beats that the CPU will send to the master and it only needed in Incrementing burst of undefined length
 ![Alt diagram](master.png)
 
 ---

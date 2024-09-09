@@ -14,7 +14,7 @@ module AHB_Master_tb();
     reg         HRESP;
     reg  [63:0] cpu_inst;
     reg  [7:0]  cpu_cont;
-
+    reg [7:0] num_beats;
     // Instantiation
     AHB_Master dut (
         .HCLK(HCLK),        
@@ -29,7 +29,8 @@ module AHB_Master_tb();
         .HREADY(HREADY),      
         .HRESP(HRESP),
         .cpu_inst(cpu_inst),
-        .cpu_cont(cpu_cont)
+        .cpu_cont(cpu_cont),
+        .num_beats(num_beats)
     );
 
 
@@ -43,6 +44,7 @@ module AHB_Master_tb();
         cpu_inst = 64'h00000000_00000000;
         cpu_cont = 8'b00000000;
         HRDATA = 32'h00000000;
+        num_beats = 4;
 
         // Apply Reset
         #10 HRESETn = 1;
@@ -50,7 +52,7 @@ module AHB_Master_tb();
         // Perform Write Transaction (HSIZE = 4-byte, Incrementing Burst, Non-Sequential)
 
         cpu_inst = 64'h000DD000_AAAAAAAA;  // Address = 0xAAAAAAAA, Write Data = 0x00000000
-        cpu_cont = 8'b10010111;  // Work = 1, HSIZE = 4-byte, HBURST = INCR, HWRITE = 1
+        cpu_cont = 8'b10010011;  // Work = 1, HSIZE = 4-byte, HBURST = INCR, HWRITE = 1
         #20;
         
         // Check if the transaction transitions to NONSEQ
@@ -75,7 +77,8 @@ module AHB_Master_tb();
         #30
         // Perform Read Transaction (Single Transfer, HSIZE = 4-byte, Non-Sequential)
         cpu_inst = 64'hBBBBBBBB_00000000;  // Address = 0xBBBBBBBB, No Write Data
-        cpu_cont = 8'b10000110;  // Work = 1, HSIZE = 4-byte, HBURST = SINGLE, HWRITE = 0
+        cpu_cont = 8'b10000010;  // Work = 1, HSIZE = 4-byte, HBURST = SINGLE, HWRITE = 0
+        num_beats = 5; 
         #10;
 
         // Check if the transaction transitions to NONSEQ for read
@@ -93,6 +96,8 @@ module AHB_Master_tb();
         #10
         HRDATA = 32'hDAAAFFF;
         #10
+        HRDATA = 32'hAAAAAAAA;
+        #10
         // Check the end of the transaction
         if (HTRANS == 2'b00)
             $display("Transaction ended successfully at time %0t", $time);
@@ -101,7 +106,8 @@ module AHB_Master_tb();
 
         // Perform BURST Transaction (Single Transfer, HSIZE = 4-byte, Sequential)
             cpu_inst = 64'hBBBBBBBB_00000000;  // Address = 0xBBBBBBBB, No Write Data
-            cpu_cont = 8'b10001110;  // Work = 1, HSIZE = 4-byte, HBURST = SINGLE, HWRITE = 0
+            cpu_cont = 8'b10000000;  // Work = 1, HSIZE = 4-byte, HBURST = SINGLE, HWRITE = 0
+            num_beats = 5; // Shoud be egnored
             //Check the undefiend length
             #200;
     

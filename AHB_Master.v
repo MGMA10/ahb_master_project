@@ -11,7 +11,8 @@ module AHB_Master (
     input wire        HREADY,      
     input wire        HRESP,
     input wire [63:0] cpu_inst,
-    input wire [7:0] cpu_cont
+    input wire [7:0] cpu_cont,
+    input wire [7:0] num_beats
 );
 
 
@@ -20,7 +21,7 @@ localparam      IDLE         = 2'b00,
                 NONSEQ   = 2'b10,
                 SEQ      = 2'b11;
 
-reg [7:0] burst_counter;
+reg [9:0] burst_counter;
 reg work;
 
 always @(posedge HCLK or negedge HRESETn) begin
@@ -69,9 +70,11 @@ always @(posedge HCLK or negedge HRESETn) begin
                         burst_counter <= burst_counter + 1;
                     if (!work)
                     HTRANS <= BUSY;
-                    else if(HBURST == 3'b001 && burst_counter < 8'b11111111)
+                    else if(HBURST == 3'b001 && burst_counter * HSIZE < 8'b1111111111 && burst_counter < num_beats)
                         HTRANS <= SEQ;
 
+                    /* fitures not Supported
+ 
                     else if(HBURST == 3'b010 && burst_counter < 4)
                             HTRANS <= SEQ;
 
@@ -89,7 +92,7 @@ always @(posedge HCLK or negedge HRESETn) begin
 
                     else if(HBURST == 3'b111 && burst_counter < 16)
                             HTRANS <= SEQ; 
-
+*/
                         else begin
                         HTRANS <= IDLE;
                     end
