@@ -270,17 +270,14 @@ The testbench (`AHB_Master_ALU_REG_TB`) verifies the functionality of the AHB Ma
 **All cases were successful**
 
 
-**Wave Form For Register File Send & Receive Data** 
+**Wave Form For Register File  & ALU Send & Receive Data Pipelined** 
 
 ![Alt diagram](wave1.png)
 
-**Wave Form For ALU Send & Store Data** 
+**Wave Form For Burst Send Data Pipelined** 
 
 ![Alt diagram](wave2.png)
 
-**Wave Form For Burst Send Data Pipelined** 
-
-![Alt diagram](wave3.png)
 
 ---
 ## Signal Descriptions
@@ -370,11 +367,6 @@ The simulation can be run using the run.do script provided in the repository. Th
 
 ## Additional Notes
 
-- **Potential for Pipelining**:
-  - While the module can be made pipelined, achieving effective pipelining would require additional mechanisms such as data bypassing and hazard detection, which are not currently implemented. Implementing pipelining with a simple CPU might lead to challenges in handling overlaps without a pipelined processor, potentially affecting the speed and efficiency of the data path.
-
-- **Separation of ALU and AHB Paths**:
+- **Internal and External Process**:
   - The current architecture keeps the ALU operations and AHB transactions largely independent, which simplifies the design but may not fully exploit the potential of a tightly integrated system where the ALU could directly write to the AHB bus and vice versa.
 
-- **Future Enhancements**:
-  - To improve the design, support for the aforementioned missing features could be added, along with enhanced pipelining techniques and expanded register file capabilities, making it more suitable for a broader range of high-performance applications.
