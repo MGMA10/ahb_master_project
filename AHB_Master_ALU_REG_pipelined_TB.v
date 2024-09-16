@@ -105,7 +105,7 @@ module AHB_Master_ALU_REG_pipelined_TB;
         ReadReg2_ADDR = 1;  //[24:22]
         WriteReg_ADDR = 0;  //[27:25]
         AlU_OP = 0;  //[30:28]
-        HADDRin = 0; // [63:32]
+        HADDRin = 10; // [63:32]
         HSIZEin = 3;  //[6:4]
         HWRITEin = 0;   //[0]
         HBURSTin = 0;  //[3:1]

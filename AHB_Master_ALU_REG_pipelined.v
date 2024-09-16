@@ -27,6 +27,8 @@ module AHB_Master_ALU_REG_pipelined (
     reg [2:0] AlU_OP;
     reg [2:0] WriteReg_ADDR2;
     reg [31:0] HWDATA_t;
+    reg [31:0] HADDR_delay;
+
 
 // Instantiating ALU
 ALU alu(
@@ -56,6 +58,11 @@ localparam      IDLE         = 2'b00,
 
 reg [9:0] burst_counter;
 reg work;
+
+always @(posedge HCLK) begin
+    HADDR_delay <= cpu_inst [63:32];
+end
+
 
 always @(posedge HCLK or negedge HRESETn) begin
     if (!HRESETn)
@@ -97,7 +104,7 @@ begin
                         type_data <= 1;
                 end
                 type_data <= 1;
-                HADDR <= cpu_inst[63:32];
+                HADDR <= HADDR_delay;
                 HSIZE <= cpu_inst[6:4];  
                 HWRITE <= cpu_inst[0];   
                 HBURST <= cpu_inst[3:1];
@@ -125,7 +132,7 @@ begin
             end
             NONSEQ:begin
                 type_data <= 1;
-                HADDR <= cpu_inst[63:32];
+                HADDR <= HADDR_delay;
                 HSIZE <= cpu_inst[6:4];  
                 HWRITE <= cpu_inst[0];   
                 HBURST <= cpu_inst[3:1];
