@@ -24,15 +24,20 @@ module AHB_Lite_Timer_Slave (
             HREADY    <= 1'b1;
             HRDATA       <= 32'b0;
             HRESP        <= 1'b0;  // OKAY response
-            timer_Target <= 0;
+            timer_Target <= 1;
             Interrupt <= 0;
         end else begin
             if (timer_enable)
                 timer_count <= timer_count + 1;
+
                 if ((timer_count >= timer_Target-1) && timer_enable)
                 begin
                     Interrupt <= 1;
                     timer_count <= 0;
+                end
+                else
+                begin
+                    Interrupt <= 0;
                 end
             if (HSEL && WORK) begin
                 if (HWRITE) begin
