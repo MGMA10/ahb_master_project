@@ -5,6 +5,7 @@
 2. [Supported and Unsupported Features](#supported-and-unsupported-features)
 3. [Hardware Architecture and FSMs State Diagram](#hardware-architecture-and-fsms-state-diagram)
 4. [HDL Coding](#hdl-coding)
+5. [AHB Lite Slave Modules](#ahb-lite-slave-modules)
 5. [Testing (Test Cases and Testbenches)](#testing-test-cases-and-testbenches)
 6. [Signal Descriptions](#signal-descriptions)
 7. [Downloading & Runing the Simulation](#Downloading-&-Runing-the-Simulation)
@@ -185,6 +186,83 @@ module AHB_Master_ALU_REG (
 
 endmodule
 ```
+---
+
+## AHB Lite Slave Modules
+
+This repository contains two AHB Lite compliant slave modules: `AHB_Lite_Timer_Slave` and `AHB_Lite_Memory_Slave`. These modules can be integrated into an AHB Lite system for handling timer-based and memory-based transactions, respectively.
+
+### Module 1: AHB_Lite_Timer_Slave
+
+The `AHB_Lite_Timer_Slave` module is a timer-based slave for the AHB Lite bus. It can be used to count clock cycles up to a target value and trigger an interrupt when the target is reached.
+
+#### Ports:
+
+- **HCLK**: Clock signal.
+- **HRESETn**: Asynchronous reset signal (active-low).
+- **HSEL**: Select signal for slave activation.
+- **HADDR [29:0]**: Address bus.
+- **HWRITE**: Write control signal.
+- **HTRANS [1:0]**: Transaction type.
+- **HWDATA [31:0]**: Data input for write operations.
+- **WORK**: Control signal for active work.
+- **HRDATA [31:0]**: Data output for read operations.
+- **HREADY**: Ready signal indicating transaction completion.
+- **HRESP**: Response signal (OKAY or ERROR).
+- **Interrupt**: Interrupt signal triggered when the timer reaches the target value.
+
+#### Functionality:
+
+- This module handles simple timer operations.
+- The timer counts up to the `timer_Target` value and generates an interrupt when the count is reached.
+- It supports both read and write operations:
+  - **Write Operations**:
+    - Writing to `HADDR == 0x00000000`: Enables/disables the timer (`HWDATA[0]`).
+    - Writing to `HADDR == 0x00000004`: Resets the timer count.
+  - **Read Operations**:
+    - Reading from `HADDR == 0x00000000`: Returns the timer enable status.
+    - Reading from `HADDR == 0x00000004`: Returns the current timer count.
+
+**Wave Form**
+
+![Alt Timer_Wave](Timer_Wave.png)
+
+---
+
+### Module 2: AHB_Lite_Memory_Slave
+
+The `AHB_Lite_Memory_Slave` module is a memory-based slave for the AHB Lite bus. It provides simple read and write access to an internal memory array.
+
+#### Ports:
+
+- **HCLK**: Clock signal.
+- **HRESETn**: Asynchronous reset signal (active-low).
+- **HSEL**: Select signal for slave activation.
+- **HADDR [29:0]**: Address bus.
+- **HWDATA [31:0]**: Data input for write operations.
+- **HWRITE**: Write control signal.
+- **HSIZE [2:0]**: Size of the transaction.
+- **HTRANS [1:0]**: Transaction type.
+- **WORK**: Control signal for active work.
+- **HRDATA [31:0]**: Data output for read operations.
+- **HREADY**: Ready signal indicating transaction completion.
+- **HRESP**: Response signal (OKAY or ERROR).
+
+#### Functionality:
+
+- This module contains a 1024-word memory (32-bit wide).
+- It supports both read and write operations:
+  - **Write Operations**: Writes the incoming data (`HWDATA`) to the specified address (`HADDR[9:0]`).
+  - **Read Operations**: Returns the stored data from the specified address (`HADDR[9:0]`).
+- Memory operations are handled synchronously with the `HCLK` clock.
+
+**Wave Form**
+
+![Alt Memory_Wave](Memory_Wave.png)
+
+**Result**
+
+![Alt Result](Memory.png)
 
 ---
 ## Testing (Test Cases and Testbenches)
